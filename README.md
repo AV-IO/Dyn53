@@ -4,6 +4,45 @@ Dyn53 is a serverless application for dynamic DNS.
 ## What
 API Gateway exposes two identical api calls (`POST` and `PUT` to `/ddns`) under the `ddns.` sub domain name. This will permit updating any record in the specified hosted zone.
 
+```mermaid
+flowchart LR
+	subgraph API_Gateway[API Gateway]
+		direction TB
+		subgraph /ddns
+			direction RL
+			POST
+			PUT
+		end
+	end
+
+	subgraph Lambda
+		direction TB
+		Authorizer
+		Record_Setter[Record Setter]
+	end
+
+	subgraph Route53
+		subgraph HostedZone
+			ddns.example.com
+			dyn.example.com
+		end
+	end
+
+	subgraph Certificate Manager
+		ddns.example.com_Certificate[ddns.example.com]
+	end
+
+	subgraph Secret Manager
+		Secret
+	end
+
+	ddns.example.com_Certificate --> ddns.example.com --> API_Gateway
+	API_Gateway --> Authorizer --> Secret
+	POST --> Record_Setter
+	PUT --> Record_Setter
+	Record_Setter ---> dyn.example.com
+```
+
 ## Deploy
 This application is fully SAM compatible and can be deployed with the following:
 ```sh
@@ -39,3 +78,5 @@ It's GNU GPLv3, feel free to send pull requests or file issues.
 ### Planned contributions
 * parameterizing API domain name
   * lambda check to make sure you're not overwriting the api domain name
+* Option to opt-out of secret manager
+  * While proper, it is by far the most expensive part of this deployment, and should be up to the user's choice
