@@ -1,0 +1,327 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Transform": "AWS::Serverless-2016-10-31",
+	"Metadata": {
+		"AWS::Composer::Groups": {
+			"Front": {
+				"Label": "Front End",
+				"Members": [
+					"Api",
+					"Certificate"
+				]
+			},
+			"Middle": {
+				"Label": "Middle Ware",
+				"Members": [
+					"Setter",
+					"Auth"
+				]
+			},
+			"Back": {
+				"Label": "Back End",
+				"Members": [
+					"Secret"
+				]
+			}
+		},
+		"AWS::CloudFormation::Interface": {
+			"ParameterGroups": [
+				{
+					"Label": "Domain",
+					"Parameters": [
+						"HostedZoneId",
+						"DomainName"
+					]
+				}
+			],
+			"ParameterLabels": {
+				"HostedZoneId": {
+					"default": "Hosted Zone ID"
+				},
+				"DomainName": {
+					"default": "Domain Name"
+				}
+			}
+		}
+	},
+	"Parameters": {
+		"HostedZoneId": {
+			"Type": "AWS::Route53::HostedZone::Id",
+			"Description": "Hosted Zone containing the dynamic records to set"
+		},
+		"DomainName": {
+			"Type": "String",
+			"Description": "The domain name used by the selected Hosted Zone"
+		}
+	},
+	"Mappings": {
+		"PASExtention": {
+			"us-west-1": {
+				"x8664": "arn:aws:lambda:us-west-1:997803712105:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11",
+				"arm64": "arn:aws:lambda:us-west-1:997803712105:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:8"
+			},
+			"us-west-2": {
+				"x8664": "arn:aws:lambda:us-west-2:345057560386:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11",
+				"arm64": "arn:aws:lambda:us-west-2:345057560386:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:11"
+			},
+			"us-east-1": {
+				"x8664": "arn:aws:lambda:us-east-1:177933569100:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11",
+				"arm64": "arn:aws:lambda:us-east-1:177933569100:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:11"
+			},
+			"us-east-2": {
+				"x8664": "arn:aws:lambda:us-east-2:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11",
+				"arm64": "arn:aws:lambda:us-east-2:590474943231:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:11"
+			}
+		}
+	},
+	"Resources": {
+		"Api": {
+			"Type": "AWS::Serverless::HttpApi",
+			"Properties": {
+				"Domain": {
+					"DomainName": {
+						"Fn::Sub": "ddns.${DomainName}"
+					},
+					"CertificateArn": {
+						"Ref": "Certificate"
+					},
+					"Route53": {
+						"HostedZoneId": {
+							"Ref": "HostedZoneId"
+						}
+					}
+				},
+				"StageName": "Prod",
+				"DefinitionBody": {
+					"openapi": "3.0",
+					"info": {
+						"title": {
+							"Fn::Sub": [
+								"${ResourceName} From Stack ${AWS::StackName}",
+								{
+									"ResourceName": "Api"
+								}
+							]
+						}
+					},
+					"paths": {
+						"/ddns": {
+							"put": {
+								"responses": {
+									"200": {
+										"description": "Success"
+									},
+									"401": {
+										"description": "Unauthorized"
+									}
+								}
+							},
+							"post": {
+								"responses": {
+									"200": {
+										"description": "Success"
+									},
+									"401": {
+										"description": "Unauthorized"
+									}
+								}
+							}
+						}
+					}
+				},
+				"Auth": {
+					"Authorizers": {
+						"BasicAuth": {
+							"AuthorizerPayloadFormatVersion": "2.0",
+							"EnableFunctionDefaultPermissions": true,
+							"EnableSimpleResponses": true,
+							"FunctionArn": {
+								"Fn::GetAtt": [
+									"Auth",
+									"Arn"
+								]
+							},
+							"FunctionInfokeRole": {
+								"Fn::GetAtt": [
+									"Auth",
+									"Arn"
+								]
+							},
+							"Identity": {
+								"Headers": [
+									"Authorization"
+								]
+							}
+						}
+					},
+					"DefaultAuthorizer": "BasicAuth"
+				}
+			}
+		},
+		"Certificate": {
+			"Type": "AWS::CertificateManager::Certificate",
+			"Properties": {
+				"DomainName": {
+					"Fn::Sub": "ddns.${DomainName}"
+				},
+				"ValidationMethod": "DNS",
+				"DomainValidationOptions": [
+					{
+						"DomainName": {
+							"Fn::Sub": "ddns.${DomainName}"
+						},
+						"HostedZoneId": {
+							"Ref": "HostedZoneId"
+						}
+					}
+				],
+				"KeyAlgorithm": "EC_secp384r1"
+			}
+		},
+		"Auth": {
+			"Type": "AWS::Serverless::Function",
+			"Properties": {
+				"FunctionName": {
+					"Fn::Sub": "${AWS::StackName}-Basic-Authorizer"
+				},
+				"Description": {
+					"Fn::Sub": [
+						"Stack ${AWS::StackName} Function ${ResourceName}",
+						{
+							"ResourceName": "Auth"
+						}
+					]
+				},
+				"CodeUri": "src/AuthFunction",
+				"Handler": "handler.handler",
+				"Runtime": "python3.12",
+				"MemorySize": 3008,
+				"Timeout": 2,
+				"Tracing": "Enabled",
+				"Policies": [
+					{
+						"AWSSecretsManagerGetSecretValuePolicy": {
+							"SecretArn": {
+								"Ref": "Secret"
+							}
+						}
+					}
+				],
+				"Environment": {
+					"Variables": {
+						"Secret": {
+							"Ref": "Secret"
+						},
+						"Log_Level": "INFO"
+					}
+				},
+				"Layers": [
+					{
+						"Fn::FindInMap": [
+							"PASExtention",
+							{
+								"Ref": "AWS::Region"
+							},
+							"x8664"
+						]
+					}
+				]
+			}
+		},
+		"AuthLogGroup": {
+			"Type": "AWS::Logs::LogGroup",
+			"DeletionPolicy": "Delete",
+			"Properties": {
+				"LogGroupName": {
+					"Fn::Sub": "/aws/lambda/${Auth}"
+				}
+			}
+		},
+		"Secret": {
+			"Type": "AWS::SecretsManager::Secret",
+			"Properties": {
+				"Name": "DynDNSBasicAuth",
+				"GenerateSecretString": {
+					"ExcludeCharacters": "\"'#%&/:;<=>?@[\\]^`{|}~",
+					"SecretStringTemplate": "{\"username\": \"dyndns\"}",
+					"GenerateStringKey": "password",
+					"PasswordLength": 32
+				}
+			}
+		},
+		"Setter": {
+			"Type": "AWS::Serverless::Function",
+			"Properties": {
+				"FunctionName": {
+					"Fn::Sub": "${AWS::StackName}-Record-Setter"
+				},
+				"Description": {
+					"Fn::Sub": [
+						"Stack ${AWS::StackName} Function ${ResourceName}",
+						{
+							"ResourceName": "Setter"
+						}
+					]
+				},
+				"CodeUri": "src/Setter",
+				"Handler": "handler.handler",
+				"Runtime": "python3.12",
+				"MemorySize": 3008,
+				"Timeout": 30,
+				"Tracing": "Enabled",
+				"Policies": [
+					{
+						"Route53ChangeResourceRecordSetsPolicy": {
+							"HostedZoneId": {
+								"Ref": "HostedZoneId"
+							}
+						}
+					}
+				],
+				"Environment": {
+					"Variables": {
+						"HostedZoneId": {
+							"Ref": "HostedZoneId"
+						},
+						"Log_Level": "INFO"
+					}
+				},
+				"Events": {
+					"ApiPUTddns": {
+						"Type": "HttpApi",
+						"Properties": {
+							"Path": "/ddns",
+							"Method": "PUT",
+							"ApiId": {
+								"Ref": "Api"
+							},
+							"PayloadFormatVersion": "2.0",
+							"TimeoutInMillis": 29000
+						}
+					},
+					"ApiPOSTddns": {
+						"Type": "HttpApi",
+						"Properties": {
+							"Path": "/ddns",
+							"Method": "POST",
+							"ApiId": {
+								"Ref": "Api"
+							},
+							"PayloadFormatVersion": "2.0",
+							"TimeoutInMillis": 29000
+						}
+					}
+				}
+			}
+		},
+		"SetterLogGroup": {
+			"Type": "AWS::Logs::LogGroup",
+			"DeletionPolicy": "Delete",
+			"Properties": {
+				"LogGroupName": {
+					"Fn::Sub": "/aws/lambda/${Setter}"
+				}
+			}
+		}
+	}
+}
