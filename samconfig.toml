@@ -1,82 +1,80 @@
-# More information about the configuration file can be found here:
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
 version = 0.1
 
 [dev]
 [dev.global.parameters]
 template_file = "dev-template.json"
-stack_name = "DevDyn53"
+stack_name    = "DevDyn53"
 
 [dev.build.parameters]
 template_file = "dev-template.json"
-parallel = true
+parallel      = true
 
 [dev.validate.parameters]
 template_file = "dev-template.json"
-lint = true
+lint          = true
 
 [dev.deploy.parameters]
-template_file = "dev-template.json"
-capabilities = "CAPABILITY_IAM"
-confirm_changeset = false
-resolve_s3 = true
+template_file       = "dev-template.json"
+capabilities        = "CAPABILITY_IAM"
+confirm_changeset   = false
+resolve_s3          = true
 resolve_image_repos = true
-on_failure = "DELETE"
+on_failure          = "DELETE"
 
 [dev.package.parameters]
-template_file = "dev-template.json"
+template_file        = "dev-template.json"
 output_template_file = "cf-out-dev-template.json"
-use_json = true
-resolve_s3 = true
+use_json             = true
+resolve_s3           = true
 
 [dev.sync.parameters]
 template_file = "dev-template.json"
-watch = true
+watch         = true
 
 [dev.local_start_api.parameters]
-template_file = "dev-template.json"
+template_file   = "dev-template.json"
 warm_containers = "EAGER"
 
 [dev.local_start_lambda.parameters]
-template_file = "dev-template.json"
+template_file   = "dev-template.json"
 warm_containers = "EAGER"
 
 
 [prod]
 [prod.global.parameters]
 template_file = "template.json"
-stack_name = "Dyn53"
+stack_name    = "Dyn53"
 
 [prod.build.parameters]
 template_file = "template.json"
-parallel = true
+parallel      = true
 
 [prod.validate.parameters]
 template_file = "template.json"
-lint = true
+lint          = true
 
 [prod.deploy.parameters]
-template_file = "template.json"
-capabilities = "CAPABILITY_IAM"
-confirm_changeset = true
-resolve_s3 = true
+template_file       = "template.json"
+capabilities        = "CAPABILITY_IAM"
+confirm_changeset   = true
+resolve_s3          = true
 resolve_image_repos = true
-on_failure = "DELETE"
+on_failure          = "DELETE"
 
 [prod.package.parameters]
-template_file = "template.json"
+template_file        = "template.json"
 output_template_file = "cf-out-template.json"
-use_json = true
-resolve_s3 = true
+use_json             = true
+resolve_s3           = true
 
 [prod.sync.parameters]
 template_file = "template.json"
-watch = true
+watch         = true
 
 [prod.local_start_api.parameters]
-template_file = "template.json"
+template_file   = "template.json"
 warm_containers = "EAGER"
 
 [prod.local_start_lambda.parameters]
-template_file = "template.json"
+template_file   = "template.json"
 warm_containers = "EAGER"
