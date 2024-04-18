@@ -76,7 +76,6 @@ sequenceDiagram
 It's GNU GPLv3, feel free to send pull requests or file issues.
 
 ### Planned contributions
-* Parameterizing API domain name ([#1](https://github.com/AV-IO/Dyn53/issues/1))
 * Option to opt-out of secret manager ([#2](https://github.com/AV-IO/Dyn53/issues/2))
   * While proper, it is by far the most expensive part of this deployment, and should be up to the user's choice
 * Restrict Permissions to a set of sub domain names instead of to an entire hosted zone ([#3](https://github.com/AV-IO/Dyn53/issues/3))

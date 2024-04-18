@@ -30,7 +30,8 @@
 					"Label": "Domain",
 					"Parameters": [
 						"HostedZoneId",
-						"DomainName"
+						"DomainName",
+						"ServiceSubDomain"
 					]
 				}
 			],
@@ -40,6 +41,9 @@
 				},
 				"DomainName": {
 					"default": "Domain Name"
+				},
+				"ServiceSubDomain": {
+					"default": "Service Sub Domain"
 				}
 			}
 		}
@@ -52,6 +56,13 @@
 		"DomainName": {
 			"Type": "String",
 			"Description": "The domain name used by the selected Hosted Zone"
+		},
+		"ServiceSubDomain": {
+			"Type": "String",
+			"Description": "The sub domain name used by the API Gateway service",
+			"AllowedPattern": "^[a-z0-9]+([a-z0-9.-]*[a-z0-9]+)?$",
+			"Default": "ddns",
+			"MaxLength": 255
 		}
 	},
 	"Mappings": {
@@ -80,7 +91,7 @@
 			"Properties": {
 				"Domain": {
 					"DomainName": {
-						"Fn::Sub": "ddns.${DomainName}"
+						"Fn::Sub": "${ServiceSubDomain}.${DomainName}"
 					},
 					"CertificateArn": {
 						"Ref": "Certificate"
@@ -162,13 +173,13 @@
 			"Type": "AWS::CertificateManager::Certificate",
 			"Properties": {
 				"DomainName": {
-					"Fn::Sub": "ddns.${DomainName}"
+					"Fn::Sub": "${ServiceSubDomain}.${DomainName}"
 				},
 				"ValidationMethod": "DNS",
 				"DomainValidationOptions": [
 					{
 						"DomainName": {
-							"Fn::Sub": "ddns.${DomainName}"
+							"Fn::Sub": "${ServiceSubDomain}.${DomainName}"
 						},
 						"HostedZoneId": {
 							"Ref": "HostedZoneId"
